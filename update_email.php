@@ -1,66 +1,95 @@
 <?php
-// ⚠️  INTENTIONALLY VULNERABLE - SQL Injection + CSRF Lab Demo
+// INTENTIONALLY VULNERABLE - CSRF (no token) + SQL Injection
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: login.php");
-    exit();
-}
+if (!isset($_SESSION['user'])) { header("Location: login.php"); exit(); }
 include 'config.php';
 
 $success = "";
-$error = "";
+$error   = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_email = $_POST['email'];
     $username  = $_SESSION['user'];
 
-    // ❌ NO CSRF TOKEN CHECK (for CSRF lab later)
-    // ❌ VULNERABLE SQL: Direct string interpolation
+    // VULNERABLE: No CSRF token check + raw string in SQL
     $query = "UPDATE users SET email = '$new_email' WHERE username = '$username'";
     if (mysqli_query($conn, $query)) {
         $_SESSION['email'] = $new_email;
-        $success = "Email updated to: $new_email";
+        $success = "Email address updated successfully.";
     } else {
-        $error = "Update failed.";
+        $error = "Failed to update email.";
     }
 }
 
-// Fetch current email
-$res = mysqli_query($conn, "SELECT email FROM users WHERE username = '" . $_SESSION['user'] . "'");
+$res     = mysqli_query($conn, "SELECT email FROM users WHERE username = '" . $_SESSION['user'] . "'");
 $current = mysqli_fetch_assoc($res);
+$initial = strtoupper(substr($_SESSION['user'], 0, 1));
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Update Email</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrimeWatch — Update Email</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="container">
-    <h2>Update Email</h2>
-    <a href="dashboard.php">← Back to Dashboard</a><br><br>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="badge">🔍</div>
+      <span>CrimeWatch<br>Portal</span>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Menu</div>
+      <a href="dashboard.php" class="nav-item"><span class="icon">📋</span> Dashboard</a>
+      <a href="post_report.php" class="nav-item"><span class="icon">➕</span> Post Report</a>
+      <a href="search.php" class="nav-item"><span class="icon">🔎</span> Search</a>
+      <a href="update_email.php" class="nav-item active"><span class="icon">✉️</span> Update Email</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar"><?php echo $initial; ?></div>
+        <div class="user-info">
+          <div class="name"><?php echo htmlspecialchars($_SESSION['user']); ?></div>
+          <div class="role">Officer</div>
+        </div>
+        <a href="logout.php" title="Logout" style="color:var(--muted);font-size:16px;text-decoration:none;">⏏</a>
+      </div>
+    </div>
+  </aside>
 
-    <p>Current email: <strong><?php echo htmlspecialchars($current['email']); ?></strong></p>
+  <main class="main">
+    <div class="page-header">
+      <h1>Update Email</h1>
+      <p>Change the email address linked to your account.</p>
+    </div>
 
-    <?php if ($success): ?>
-        <p class="success"><?php echo $success; ?></p>
-    <?php endif; ?>
-    <?php if ($error): ?>
-        <p class="error"><?php echo $error; ?></p>
-    <?php endif; ?>
+    <div class="form-card">
+      <div class="form-group">
+        <label>Current Email</label>
+        <input type="text" value="<?php echo htmlspecialchars($current['email']); ?>" disabled style="opacity:0.5;">
+      </div>
 
-    <!-- ❌ NO CSRF TOKEN in form (for CSRF lab later with Burp Suite) -->
-    <form method="POST" action="update_email.php">
-        <label>New Email:</label>
-        <input type="email" name="email" required>
-        <button type="submit">Update Email</button>
-    </form>
+      <div class="divider"></div>
 
-    <br>
-    <small>
-        <strong>Note for CSRF lab (Burp Suite):</strong><br>
-        This form has no CSRF token. An attacker page can submit this form on behalf of a logged-in victim.
-    </small>
+      <?php if ($success): ?>
+        <div class="alert alert-success">✓ <?php echo $success; ?></div>
+      <?php endif; ?>
+      <?php if ($error): ?>
+        <div class="alert alert-error">⚠ <?php echo $error; ?></div>
+      <?php endif; ?>
+
+      <!-- VULNERABLE: No CSRF token in this form -->
+      <form method="POST" action="update_email.php">
+        <div class="form-group">
+          <label>New Email Address</label>
+          <input type="email" name="email" placeholder="Enter new email address" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Email</button>
+      </form>
+    </div>
+  </main>
 </div>
 </body>
 </html>

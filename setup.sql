@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS reports (
 -- Seed users (plain text passwords - intentionally insecure for lab)
 INSERT INTO users (username, password, email) VALUES
 ('admin', 'admin123', 'admin@lab.com'),
-('alice', 'password1', 'alice@lab.com'),
+('alice', 'pass123', 'alice@lab.com'),
+('attacker', 'pass123', 'attacker@lab.com'),
 ('bob', 'pass456', 'bob@lab.com');
 
 -- Seed crime reports

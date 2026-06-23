@@ -2,8 +2,8 @@
 // Database configuration
 $host = "localhost";
 $dbname = "crime_report";
-$user = "root";
-$pass = "";  // Change if your MySQL has a password
+$user = "labuser";
+$pass = "lab1234";  // Change if your MySQL has a password
 
 $conn = mysqli_connect($host, $user, $pass, $dbname);
 

